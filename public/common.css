@@ -1,0 +1,141 @@
+/*FLEX-----------------------------------------------------------------------------------------------------------------------*/
+.hbox {
+  display: flex;
+  flex-flow: row nowrap;
+  align-items: stretch;
+  /*flex: 1 1 auto;*/
+}
+
+.vbox {
+  display: flex;
+  flex-flow: column nowrap;
+  align-items: stretch;
+  /*flex: 1 1 auto;*/
+}
+
+.fbox {
+  display: flex;
+  flex: 1 1 0;
+  flex-wrap: nowrap;
+  align-items: stretch;
+}
+
+.cbox {
+  display: flex;
+  flex: 1 0 auto;
+  flex-wrap: nowrap;
+  align-items: stretch;
+}
+
+/*-------------------------------------------------------------------------*/
+.flow1 { flex: 1; }
+.flow-full { flex: 1 1 0; } /*full stretchyness, ignore content size*/
+.flow-content { flex: 1 0 auto; } /*stretches but will be at least content size*/
+.flex-none { flex: 0 0 auto; } /*no stretchyness, stay at content size*/
+
+.flow-start { justify-content: flex-start; }
+.flow-end { justify-content: flex-end; }
+.flow-center { justify-content: center; }
+.flow-spaced { justify-content: space-around; }
+.flow-edges { justify-content: space-between; }
+
+.span-start { align-items: flex-start; }
+.span-end { align-items: flex-end; }
+.span-center { align-items: center; }
+.span-stretch { align-items: stretch; }
+
+.ispan-start { align-self: flex-start; }
+.ispan-end { align-self: flex-end; }
+.ispan-center { align-self: center; }
+.ispan-stretch { align-self: stretch; }
+
+.flex-wrap { flex-wrap: wrap; }
+.flex-nowrap { flex-wrap: nowrap; }
+
+/*-------------------------------------------------------------------------*/
+.bg-red { background: red; }
+.bg-green { background: green; }
+.bg-blue { background: blue; }
+
+/*-------------------------------------------------------------------------*/
+.rel { position: relative; }
+.abs { position: absolute; }
+.abs-0 { position: absolute; left: 0px; top: 0px; right: 0px; bottom: 0px; }
+.abs-4 { position: absolute; left: 4px; top: 4px; right: 4px; bottom: 4px; }
+
+.abs-l-0 { position: absolute; left: 0px; top: 0px; bottom: 0px; }
+.abs-l-4 { position: absolute; left: 4px; top: 4px; bottom: 4px; }
+
+.abs-tl-0 { position: absolute; left: 0px; top: 0px; }
+.abs-tl-4 { position: absolute; left: 4px; top: 4px; }
+
+/*-------------------------------------------------------------------------*/
+.no-click {
+  pointer-events: none;
+}
+
+.clickable {
+  pointer-events: initial;
+}
+
+/*-------------------------------------------------------------------------*/
+.trispinner {
+  position: relative;
+  width:100px;
+  height:100px;
+
+  /*centering in parent*/
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+}
+
+.trispinner span {
+  display:block;
+  position:relative;
+  left:50%;
+  top:50%;
+  width:100px;
+  height:100px;
+  margin:-50px 0 0 -50px;
+  border-radius:50%;
+  border:3px solid transparent;
+  border-top-color:#900;
+  animation:main_preloader_spin 2s linear infinite;
+}
+
+.trispinner:before {
+  content:"";
+  position:absolute;
+  top:5px;
+  left:5px;
+  right:5px;
+  bottom:5px;
+  border-radius:50%;
+  border:3px solid transparent;
+  border-top-color:#e6e6e6;
+  animation:main_preloader_spin 3s linear infinite;
+}
+
+.trispinner:after {
+  content:"";
+  position:absolute;
+  top:15px;
+  left:15px;
+  right:15px;
+  bottom:15px;
+  border-radius:50%;
+  border:3px solid transparent;
+  border-top-color:#c00;
+  animation:main_preloader_spin 1.5s linear infinite;
+}
+
+@keyframes main_preloader_spin{0%{-webkit-transform:rotate(0deg);-moz-transform:rotate(0deg);-ms-transform:rotate(0deg);-o-transform:rotate(0deg);transform:rotate(0deg)}100%{-webkit-transform:rotate(360deg);-moz-transform:rotate(360deg);-ms-transform:rotate(360deg);-o-transform:rotate(360deg);transform:rotate(360deg)}}
+
+/*-------------------------------------------------------------------------*/
+ul {
+  padding: 0;
+  margin: 0;
+  list-style: none;
+}
