@@ -1,50 +1,125 @@
-import { createStore, combineReducers, applyMiddleware } from 'redux'
-import promiseMiddleware from 'redux-promise'
-import thunkMiddleware from 'redux-thunk'
+import { createStore, combineReducers } from 'redux'
 import Immutable from 'immutable'
 
-import appReducer from './reducer'
-
-let store = null
-const dynamicReducers = {}
-
-function getAllReducers() {
-  return combineReducers({
-    app: appReducer,
-    // ...dynamicReducers //why can't i do this?
-  })
-}
-
 //CREATE STORE------------------------------------------------------------
+let store = null
 
-export function createAppStore() {
-  store = createStore(getAllReducers(), {}, applyMiddleware(thunkMiddleware, promiseMiddleware))
+// reducerArg can be a function (single reducer function) or
+// it can be an object (for multiple reducers)
+export function create(reducerArg) {
+  if(typeof(reducerArg) === 'function') {
+    store = createStore(reducerArg)
+  }
+  else {
+    reducerMap = reducerArg
+    store = createStore(combineReducers(getAllReducers()))
+  }
   return store
 }
 
-//DYNAMIC REDUCERS--------------------------------------------------------
-
-export function addDynamicReducer(name, reducer) {
-  if(dynamicReducers[name])
-    console.warn('addDynamicReducer(): warning dynamic reducer with name ' + name + ' already exists')
-
-  dynamicReducers[name] = reducer
-  store.replaceReducer(getAllReducers())
+export function createDefaultReducer(initialState) {
+  //return basic reducer function
+  return function(state, action) {
+    const { type, payload } = action
+    if( type == 'onUpdate') {
+      const { handler } = payload
+      return handler(state, initialState)
+    }
+    return initialState
+  }
 }
 
-export function removeDynamicReducer(name) {
-  if(!dynamicReducers[name])
-    console.warn('removeDynamicReducer(): warning dynamic reducer with name ' + name + ' does not exists')
 
-  // delete dynamicReducers[name]
-  // when i deleted the reducer, redux printed an error in the console
-  // so instead of completely deleting the reducer, i will just clear it
-  dynamicReducers[name] = (state) => Immutable.Map({})
-  store.replaceReducer(getAllReducers())
+//UPDATE STORE------------------------------------------------------------
+export function update(handler) {
+  return store.dispatch({ type: 'onUpdate', payload: { handler } })
+}
+
+export function get(...path) {
+  path = parsePath(...path)
+  return store.getState().getIn(path)
+}
+  
+export function set(...pathAndValue) {
+  const { path, value } = parsePathAndValue(...pathAndValue)
+  return update((state) => {
+    return state.setIn(path, value)
+  })
+}
+
+export function merge(...pathAndValue) {
+  const { path, value } = parsePathAndValue(...pathAndValue)
+  return update((state) => {
+    return state.mergeIn(path, value)
+  })
+}
+
+export function push(...pathToCollectionAndElement) {
+  const { path:pathToCollection, value:element } = parsePathAndValue(...pathToCollectionAndElement)
+  return update((state) => {
+    // console.log('Store.push()', pathToCollection, element)
+    var collection = state.getIn(pathToCollection)
+    collection = collection.push(element)
+    state = state.setIn(pathToCollection, collection)
+    return state
+  })
+}
+
+export function pop(...pathToCollection) {
+  pathToCollection = parsePath(...pathToCollection)
+  return update((state) => {
+    var collection = state.getIn(pathToCollection)
+    collection = collection.pop()
+    state = state.setIn(pathToCollection, collection)
+    return state
+  })
+}
+
+export function remove(...path) {
+  path = parsePath(...path)
+  return update((state) => {
+    state = state.removeIn(path)
+    return state
+  })
+}
+
+export function toggle(...path) {
+  path = parsePath(...path)
+  return update((state) => {
+    const value = state.getIn(path)
+    state = state.setIn(path, !value)
+    return state
+  })
+}
+
+export function reset(...path) {
+  path = parsePath(...path)
+  return update((state, initialState) => {
+    const initialValue = initialState.getIn(path)
+    state = state.setIn(path, initialValue)
+    return state
+  })
+}
+
+// Convert path args to array
+function parsePath(...path) {
+  // we accept multiple string args or 1 array arg for path
+  if(path.length == 1 && Array.isArray(path[0]))// the path was given as an array
+    path = path[0]
+  return path
+}
+
+function parsePathAndValue(...pathAndValue) {
+  var value = pathAndValue.pop() // value is last arg
+  value = Immutable.fromJS(value) // always convert to Immutable objects
+  
+  // we accept multiple string args or 1 array arg for path
+  var path = parsePath(pathAndValue)
+
+  return {path, value}
 }
 
 //HELPERS----------------------------------------------------------------
-
 export function asyncAction(func) {
   return (...args) => {
     return (_dispatch, _getState) => {
@@ -53,15 +128,15 @@ export function asyncAction(func) {
   }
 }
 
+// dispatch(<asyncAction>)
+// dispatch({ type:'count', payload:123 })
+// dispatch('count', '123')
 export function dispatch(...args) {
   const numArgs = args.length
   const a0 = args[0]
   const a1 = args[1]
 
-  // console.log(args.map(a => typeof a), args)
-
   if(typeof a0 == 'function') {
-    // console.assert(numArgs==1, 'unexpected dispatch args')
     if(numArgs != 1)
       console.log('store warning, function, numArgs should be 1 but was ' + numArgs)
     return store.dispatch(a0) //a0 is an action
@@ -100,32 +175,6 @@ export function tightenDispatch(...tighteningArgs) {
   }
 }
 
-// export function directDispatch(type, payload) {
-//   return store.dispatch({type:type, payload:payload})
-// }
-
-// export function tightenDirectDispatch(type) {
-//   return (payload) => {
-//     return directDispatch(type, payload)
-//   }
-// }
-
-//remove key by key list
-export function repeal(...keys) {
-  return store.dispatch({type:'handleRepeal', payload:keys})
-}
-
-//push into collection
-export function push(...pathToCollectionAndElement) {
-  const element = pathToCollectionAndElement.pop() //element is last arg
-  const pathToCollection = pathToCollectionAndElement
-  return store.dispatch({ type: 'handlePush', payload: {pathToCollection, element} })
-}
-
-export function pop(...keys) {
-  return store.dispatch({type:'handlePop', payload:keys})
-}
-
 export function getState(reducerName, ...getInArgs) {
   const state = store.getState()
 
@@ -140,6 +189,7 @@ export function getState(reducerName, ...getInArgs) {
     return state
 }
 
+/*
 export function handleSend(state, payload) {
   // console.log('----------------')
   // console.log('>send', state.toJS())
@@ -173,11 +223,43 @@ export function handleSend(state, payload) {
     return Immutable.Map.isMap(o) && !Immutable.OrderedMap.isOrderedMap(o)
   }
 }
+*/
 
-window.gs = getState
+//DYNAMIC REDUCERS--------------------------------------------------------
+let reducerMap = null // set when creating the store, like { user: userReducer, home: homeReducer }
+const dynamicReducers = {}
+function getAllReducers() {
+  return combineReducers({
+    ...reducerMap,
+    // ...dynamicReducers //why can't i do this?
+  })
+}
 
-export default {
-  addDynamicReducer, removeDynamicReducer,
-  asyncAction,
-  dispatch, tightenDispatch, getState, handleSend, 
+export function addDynamicReducer(name, reducer) {
+  if(dynamicReducers[name])
+    console.warn('addDynamicReducer(): warning dynamic reducer with name ' + name + ' already exists')
+
+  dynamicReducers[name] = reducer
+  store.replaceReducer(getAllReducers())
+}
+
+export function removeDynamicReducer(name) {
+  if(!dynamicReducers[name])
+    console.warn('removeDynamicReducer(): warning dynamic reducer with name ' + name + ' does not exists')
+
+  // delete dynamicReducers[name]
+  // when i deleted the reducer, redux printed an error in the console
+  // so instead of completely deleting the reducer, i will just clear it
+  dynamicReducers[name] = (state) => Immutable.Map({})
+  store.replaceReducer(getAllReducers())
+}
+
+
+//DEV----------------------------------------------------------------
+const IS_DEV = false
+if(IS_DEV) {
+  window.Immutable = Immutable
+  window.store = store
+  window.gs = getState
+  window.Store = Store
 }
