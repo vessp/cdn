@@ -24,6 +24,10 @@ export class TimeOps {
     return moment(moment.now() + offsetMillis).utc().format(outputFormat)
   }
 
+  static nowTimestampJst(offsetMillis=0, outputFormat=FORMAT_ISO) {
+    return moment(moment.now() + offsetMillis).utcOffset(9).format(outputFormat)
+  }
+
   //-------------------------------------------------------------
 
   static timestampToMillis(timestamp, format=FORMAT_ISO) {
